@@ -48,6 +48,7 @@ const ScenarioPage: React.FC = () => {
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
   const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
   const [userInput, setUserInput] = useState('');
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
   
   // 獲取情境資料
   useEffect(() => {
@@ -63,6 +64,23 @@ const ScenarioPage: React.FC = () => {
       }
     }
   }, [id, navigate]);
+  
+  // 步驟切換時，將訊息加入 allMessages
+  useEffect(() => {
+    if (currentStep && currentStep.messages) {
+      setAllMessages(prev => [...prev, ...currentStep.messages.filter(m => !prev.some(pm => pm.id === m.id))]);
+    }
+  }, [currentStep]);
+  
+  // 完成時自動跳轉到個人分析頁
+  useEffect(() => {
+    if (completionDialogOpen && id) {
+      const timer = setTimeout(() => {
+        navigate(`/scenario/${id}/completion`);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [completionDialogOpen, id, navigate]);
   
   // 處理選項選擇
   const handleSelectOption = (option: Option) => {
@@ -135,6 +153,8 @@ const ScenarioPage: React.FC = () => {
       ...prev,
       messages: [...prev.messages, userMsg]
     } : prev);
+    // 在 handleUserInputSend 內，將 userMsg 也 push 到 allMessages
+    setAllMessages(prev => [...prev, userMsg]);
   };
   
   // 返回教育頁面
@@ -155,6 +175,16 @@ const ScenarioPage: React.FC = () => {
   
   // 獲取當前情境
   const scenario = id ? getScenarioById(id) : null;
+  
+  // 處理「下一步」
+  const handleNextStep = () => {
+    if (!currentStep || !scenario) return;
+    // 找到目前步驟在 scenario.steps 的 index
+    const idx = scenario!.steps.findIndex(s => s.id === currentStep.id);
+    if (idx >= 0 && idx < scenario!.steps.length - 1) {
+      setCurrentStep(scenario!.steps[idx + 1]);
+    }
+  };
   
   if (!scenario) {
     return null; // 或顯示載入中的介面
@@ -233,7 +263,7 @@ const ScenarioPage: React.FC = () => {
             overflowY: 'auto',
             bgcolor: '#f8fafd'
           }}>
-            {currentStep && currentStep.messages.map((message: Message) => (
+            {allMessages.map((message: Message) => (
               <Box
                 key={message.id}
                 sx={{
@@ -338,6 +368,12 @@ const ScenarioPage: React.FC = () => {
               )}
             </Box>
           )}
+          {/* 沒有選項時顯示「下一步」按鈕 */}
+          {currentStep && !currentStep.showOptions && !currentStep.isEnd && (
+            <Box sx={{ p: 2, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
+              <Button variant="contained" onClick={handleNextStep}>下一步</Button>
+            </Box>
+          )}
         </Paper>
       </Container>
       
@@ -384,8 +420,18 @@ const ScenarioPage: React.FC = () => {
             返回教育頁面
           </Button>
           <Button 
-            onClick={handleCloseCompletionDialog} 
+            onClick={() => {
+              handleCloseCompletionDialog();
+              navigate(`/scenario/${id}/completion`);
+            }}
             variant="outlined"
+            color="primary"
+          >
+            查看個人分析
+          </Button>
+          <Button 
+            onClick={handleCloseCompletionDialog} 
+            variant="text"
           >
             關閉
           </Button>

@@ -633,16 +633,7 @@ const ChatSimulatorPage: React.FC = () => {
           
           <Box sx={{ flexGrow: 1 }} />
           
-          {/* 截圖按鈕 */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<CameraAltIcon />}
-            onClick={handleTakeScreenshot}
-            size="small"
-          >
-            截圖求證
-          </Button>
+          
         </Paper>
         
         {/* 訊息區域 */}
@@ -871,13 +862,7 @@ const ChatSimulatorPage: React.FC = () => {
         </DialogContent>
         
         <DialogActions sx={{ px: 3, py: 2, bgcolor: 'background.default' }}>
-          <Button
-            variant="outlined"
-            onClick={handleTakeScreenshot}
-            startIcon={<ScreenshotIcon />}
-          >
-            截圖求證
-          </Button>
+          
           <Button
             variant="contained"
             color="error"
