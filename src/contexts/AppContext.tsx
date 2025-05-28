@@ -19,6 +19,12 @@ interface AppContextType {
   // 互動教育狀態
   completedScenarios: string[];
   addCompletedScenario: (scenarioId: string) => void;
+  
+  // 風險評估相關
+  assessmentCompleted: boolean;
+  setAssessmentCompleted: React.Dispatch<React.SetStateAction<boolean>>;
+  overallRiskLevel: string;
+  setOverallRiskLevel: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // 創建上下文
@@ -43,6 +49,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // 互動教育狀態
   const [completedScenarios, setCompletedScenarios] = useState<string[]>([]);
   
+  // 風險評估相關
+  const [assessmentCompleted, setAssessmentCompleted] = useState<boolean>(false);
+  const [overallRiskLevel, setOverallRiskLevel] = useState<string>('中風險');
+  
   const addCompletedScenario = (scenarioId: string) => {
     if (!completedScenarios.includes(scenarioId)) {
       setCompletedScenarios([...completedScenarios, scenarioId]);
@@ -61,6 +71,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setScreenshotData,
     completedScenarios,
     addCompletedScenario,
+    assessmentCompleted,
+    setAssessmentCompleted,
+    overallRiskLevel,
+    setOverallRiskLevel,
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

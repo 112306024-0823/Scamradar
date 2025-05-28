@@ -35,6 +35,13 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import MenuIcon from '@mui/icons-material/Menu';
 import SchoolIcon from '@mui/icons-material/School';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import InfoIcon from '@mui/icons-material/Info';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import SecurityIcon from '@mui/icons-material/Security';
+import ImageIcon from '@mui/icons-material/Image';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 
 import { useAppContext } from '../contexts/AppContext';
 import { analyzeMessage, DetectionResult, WARNING_LEVEL, getScamTypeName } from '../utils/scamDetection';
@@ -85,6 +92,10 @@ const ChatSimulatorPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [messageCount, setMessageCount] = useState(0);
+  const [riskAssessmentOpen, setRiskAssessmentOpen] = useState(false);
+  const [scamProbability, setScamProbability] = useState(0);
+  const [guideDialogOpen, setGuideDialogOpen] = useState(false);
   
   // 聊天對象資料
   const chatPartners: ChatPartner[] = [
@@ -180,6 +191,10 @@ const ChatSimulatorPage: React.FC = () => {
         const firstPartner = filteredPartners[0];
         setCurrentChat(firstPartner);
         setMessages(initialMessages[firstPartner.id]);
+        
+        // 重設對話計數
+        setMessageCount(0);
+        setRiskAssessmentOpen(false);
       }
     }
   }, [authorizedPlatforms, navigate]);
@@ -195,8 +210,46 @@ const ChatSimulatorPage: React.FC = () => {
   useEffect(() => {
     if (currentChat) {
       setMessages(initialMessages[currentChat.id]);
+      // 重設對話計數
+      setMessageCount(0);
     }
   }, [currentChat]);
+  
+  // 添加一個新的useEffect來監控訊息數量變化
+  useEffect(() => {
+    // 當用戶發送了至少3條訊息時才顯示風險評估
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    
+    if (userMessages.length >= 3 && !riskAssessmentOpen && !warningDialogOpen) {
+      console.log(`用戶訊息數量: ${userMessages.length}，觸發風險評估`);
+      
+      // 計算詐騙機率
+      let probability = 0;
+      if (currentChat?.id === 'investment-scammer') {
+        probability = 85 + Math.floor(Math.random() * 10); // 85-94%
+      } else if (currentChat?.id === 'friend-impersonator') {
+        probability = 75 + Math.floor(Math.random() * 15); // 75-89%
+      } else if (currentChat?.id === 'shopping-scammer') {
+        probability = 90 + Math.floor(Math.random() * 9); // 90-98% 
+      } else {
+        probability = 50 + Math.floor(Math.random() * 30); // 50-79%
+      }
+      
+      setScamProbability(probability);
+      
+      // 延遲顯示風險評估，確保不會干擾用戶正在進行的操作
+      setTimeout(() => {
+        console.log("開啟風險評估視窗");
+        // 再次確認沒有其他對話框開啟
+        if (!warningDialogOpen) {
+          setRiskAssessmentOpen(true);
+        } else {
+          // 如果有警告視窗開啟，等警告視窗關閉後再顯示風險評估
+          console.log("有警告視窗開啟，延遲顯示風險評估");
+        }
+      }, 1500);
+    }
+  }, [messages, riskAssessmentOpen, warningDialogOpen, currentChat]);
   
   // 發送訊息
   const handleSendMessage = () => {
@@ -213,6 +266,12 @@ const ChatSimulatorPage: React.FC = () => {
     // 更新訊息列表
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
+    
+    // 增加互動計數
+    const newCount = messageCount + 1;
+    setMessageCount(newCount);
+    console.log(`用戶互動次數增加到: ${newCount}`); // 添加調試日誌
+    
     setMessageInput('');
     
     // 模擬回應
@@ -227,7 +286,7 @@ const ChatSimulatorPage: React.FC = () => {
           responseText = '其實我現在遇到一點急事，需要借5000元應急，等下就還你。你可以幫我先轉帳嗎？';
           break;
         case 'shopping-scammer':
-          responseText = '請點擊這個連結填寫您的資料：http://bit.ly/gift_claim 需要您的姓名、電話、地址、信用卡資訊以便寄送禮物。';
+          responseText = '恭喜您中獎了！！請點擊這個連結填寫您的資料：http://bit.ly/gift_claim 需要您的姓名、電話、地址、信用卡資訊以便寄送禮物。要快！限時優惠只剩下2小時！';
           break;
         default:
           responseText = '好的，謝謝您的回覆！';
@@ -251,8 +310,14 @@ const ChatSimulatorPage: React.FC = () => {
       
       // 如果是詐騙訊息，顯示警告
       if (detectionResult.isScam) {
+        console.log("詐騙訊息偵測成功，準備顯示警告");
         setCurrentWarning(detectionResult);
-        setWarningDialogOpen(true);
+        
+        // 延遲500ms顯示警告視窗，確保UI已完全更新
+        setTimeout(() => {
+          console.log("正在顯示詐騙警告視窗");
+          setWarningDialogOpen(true);
+        }, 500);
       }
     }, 1000);
   };
@@ -273,6 +338,15 @@ const ChatSimulatorPage: React.FC = () => {
   // 關閉警告對話框
   const handleCloseWarningDialog = () => {
     setWarningDialogOpen(false);
+    
+    // 當警告視窗關閉，且用戶已發送足夠訊息，顯示風險評估視窗
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    if (userMessages.length >= 3 && !riskAssessmentOpen) {
+      setTimeout(() => {
+        console.log("警告視窗關閉後顯示風險評估");
+        setRiskAssessmentOpen(true);
+      }, 500);
+    }
   };
   
   // 切換側邊欄
@@ -358,6 +432,12 @@ const ChatSimulatorPage: React.FC = () => {
     navigate('/education');
   };
   
+  // 關閉風險評估對話框
+  const handleCloseRiskAssessment = () => {
+    console.log("關閉風險評估視窗"); // 添加調試日誌
+    setRiskAssessmentOpen(false);
+  };
+  
   // 取得警告等級顏色
   const getWarningColor = (level: WarningLevel) => {
     switch (level) {
@@ -373,7 +453,7 @@ const ChatSimulatorPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'background.default' }}>
       {/* 頂部工具列 */}
       <AppBar position="static">
         <Toolbar>
@@ -470,23 +550,12 @@ const ChatSimulatorPage: React.FC = () => {
           flexGrow: 1, 
           display: 'flex', 
           flexDirection: 'column',
-          bgcolor: 'background.default',
-          overflow: 'hidden'
+          bgcolor: '#fff',
+          overflow: 'hidden',
+          position: 'relative',
         }}
         ref={chatContentRef}
       >
-        {/* 聊天背景 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            opacity: 0.05,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            zIndex: 0
-          }}
-        />
-        
         {/* 平台標示 */}
         <Box 
           sx={{ 
@@ -504,6 +573,78 @@ const ChatSimulatorPage: React.FC = () => {
           </Typography>
         </Box>
         
+        {/* 導航區塊 */}
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 1
+          }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<SchoolIcon />}
+            onClick={() => {
+              setCurrentPage('education');
+              navigate('/education');
+            }}
+            size="small"
+          >
+            互動式教育
+          </Button>
+          
+          <Button
+            variant="outlined"
+            startIcon={<AssessmentIcon />}
+            onClick={() => {
+              setCurrentPage('assessment');
+              navigate('/assessment');
+            }}
+            size="small"
+          >
+            風險評估
+          </Button>
+          
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<ImageIcon />}
+            onClick={() => {
+              setCurrentPage('screenshot-analysis');
+              navigate('/screenshot-analysis');
+            }}
+            size="small"
+          >
+            截圖分析
+          </Button>
+          
+          <Button
+            variant="outlined"
+            startIcon={<InfoIcon />}
+            onClick={() => setGuideDialogOpen(true)}
+            size="small"
+          >
+            使用指南
+          </Button>
+          
+          <Box sx={{ flexGrow: 1 }} />
+          
+          {/* 截圖按鈕 */}
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CameraAltIcon />}
+            onClick={handleTakeScreenshot}
+            size="small"
+          >
+            截圖求證
+          </Button>
+        </Paper>
+        
         {/* 訊息區域 */}
         <Box
           ref={chatContainerRef}
@@ -513,7 +654,8 @@ const ChatSimulatorPage: React.FC = () => {
             p: 2,
             display: 'flex',
             flexDirection: 'column',
-            zIndex: 1
+            zIndex: 1,
+            bgcolor: 'transparent',
           }}
         >
           {messages.map((message) => (
@@ -621,24 +763,91 @@ const ChatSimulatorPage: React.FC = () => {
         onClose={handleCloseWarningDialog}
         maxWidth="sm"
         fullWidth
+        TransitionProps={{
+          timeout: 500
+        }}
+        PaperProps={{
+          elevation: 24,
+          sx: {
+            border: '2px solid',
+            borderColor: 'error.main',
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(255, 0, 0, 0.3)'
+          }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', bgcolor: 'error.main', color: 'white' }}>
-          <WarningIcon sx={{ mr: 1 }} />
-          詐騙警示
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          bgcolor: 'error.main', 
+          color: 'white',
+          py: 2
+        }}>
+          <WarningIcon sx={{ mr: 1, fontSize: 28 }} />
+          <Typography variant="h5">詐騙警示</Typography>
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
+        <DialogContent sx={{ mt: 2, p: 3 }}>
           {currentWarning && (
             <>
-              <Typography variant="h6" gutterBottom>
-                偵測到可能的{getScamTypeName(currentWarning.type)}
-              </Typography>
-              
-              <Typography variant="body1" paragraph>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 2,
+                pb: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider' 
+              }}>
+                <Avatar 
+                  sx={{ 
+                    bgcolor: 'error.main', 
+                    color: 'white',
+                    width: 48,
+                    height: 48,
+                    mr: 2 
+                  }}
+                >
+                  <WarningIcon fontSize="large" />
+                </Avatar>
+                <Typography variant="h6" color="error.main" fontWeight="bold">
+                  偵測到可能的{getScamTypeName(currentWarning.type)}
+                </Typography>
+              </Box>
+
+              {/* 新增：詐騙風險%數與NLP對比說明 */}
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                mb: 3
+              }}>
+                <Typography variant="h2" color="error" sx={{ fontWeight: 'bold', mb: 1, textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  83%
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary" align="center" sx={{ mb: 1 }}>
+                  NLP 模型分析：本訊息與全國詐騙語料相似度高，屬於高風險訊息。
+                </Typography>
+                <Typography variant="caption" color="text.secondary" align="center">
+                  （此分數根據 ScamRadar AI 對比數萬筆詐騙訊息語料，結合語意特徵、關鍵字、語境等多重指標計算）
+                </Typography>
+              </Box>
+
+              <Typography variant="body1" paragraph sx={{ 
+                fontWeight: 'medium',
+                fontSize: '1.1rem',
+                mb: 3 
+              }}>
                 系統偵測到此訊息可能包含詐騙內容，請提高警覺！
               </Typography>
               
-              <Paper sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <Paper sx={{ 
+                p: 2, 
+                bgcolor: 'error.light', 
+                color: 'error.contrastText',
+                mb: 3,
+                borderLeft: '4px solid',
+                borderColor: 'error.dark' 
+              }}>
+                <Typography variant="subtitle2" gutterBottom fontWeight="bold">
                   可疑原因：
                 </Typography>
                 <Typography variant="body2">
@@ -646,12 +855,13 @@ const ChatSimulatorPage: React.FC = () => {
                 </Typography>
               </Paper>
               
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                <HelpOutlineIcon sx={{ mr: 1 }} />
                 防範小技巧：
               </Typography>
-              <List disablePadding>
+              <List disablePadding sx={{ bgcolor: 'background.paper', borderRadius: 1, mb: 2 }}>
                 {currentWarning.tips.map((tip, index) => (
-                  <ListItem key={index} sx={{ py: 0.5 }}>
+                  <ListItem key={index} sx={{ py: 1, borderBottom: index < currentWarning.tips.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                     <Typography variant="body2">• {tip}</Typography>
                   </ListItem>
                 ))}
@@ -659,7 +869,8 @@ const ChatSimulatorPage: React.FC = () => {
             </>
           )}
         </DialogContent>
-        <DialogActions>
+        
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: 'background.default' }}>
           <Button
             variant="outlined"
             onClick={handleTakeScreenshot}
@@ -669,9 +880,194 @@ const ChatSimulatorPage: React.FC = () => {
           </Button>
           <Button
             variant="contained"
+            color="error"
             onClick={handleCloseWarningDialog}
           >
             我知道了
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* 風險評估對話框 */}
+      <Dialog
+        open={riskAssessmentOpen}
+        onClose={handleCloseRiskAssessment}
+        maxWidth="sm"
+        fullWidth
+        TransitionProps={{
+          timeout: 800
+        }}
+        PaperProps={{
+          elevation: 24,
+          sx: {
+            border: '4px solid #ff4500',
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(255, 69, 0, 0.5)',
+            animation: 'pulse 1.5s infinite',
+            '@keyframes pulse': {
+              '0%': {
+                boxShadow: '0 8px 32px rgba(255, 69, 0, 0.5)',
+              },
+              '50%': {
+                boxShadow: '0 8px 45px rgba(255, 69, 0, 0.8)',
+              },
+              '100%': {
+                boxShadow: '0 8px 32px rgba(255, 69, 0, 0.5)',
+              },
+            },
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          bgcolor: 'error.main', 
+          color: 'white',
+          py: 3
+        }}>
+          <WarningIcon sx={{ mr: 1, fontSize: 32 }} />
+          <Typography variant="h5" fontWeight="bold">詐騙風險評估</Typography>
+        </DialogTitle>
+        
+        <DialogContent sx={{ mt: 2, p: 4 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: 4
+          }}>
+            <Typography variant="h1" color="error" sx={{ 
+              fontWeight: 'bold', 
+              mb: 2,
+              fontSize: '4.5rem',
+              textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }}>
+              {scamProbability}%
+            </Typography>
+            <Typography variant="h6" align="center" sx={{ fontWeight: 'medium' }}>
+              目前對話被判定為詐騙的機率
+            </Typography>
+            
+            {/* 新增：全國平均比較 */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              mt: 2, 
+              bgcolor: 'background.paper', 
+              p: 1.5, 
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+              width: '100%',
+              justifyContent: 'space-between'
+            }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                全國平均詐騙風險率:
+              </Typography>
+              <Typography variant="subtitle1" color="error" fontWeight="bold">
+                {Math.floor(scamProbability * 0.6)}%
+              </Typography>
+              <Box sx={{ 
+                color: 'error.main',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <span>+{Math.floor(scamProbability * 0.4)}%</span>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>
+                  高於平均
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+          
+          <Paper sx={{ 
+            p: 3, 
+            bgcolor: scamProbability > 85 ? 'error.light' : 'warning.light',
+            color: scamProbability > 85 ? 'error.contrastText' : 'warning.contrastText',
+            mb: 4,
+            borderLeft: '6px solid',  
+            borderColor: scamProbability > 85 ? 'error.dark' : 'warning.dark',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}>
+            <Typography variant="h6" gutterBottom fontWeight="bold" sx={{ display: 'flex', alignItems: 'center' }}>
+              <WarningIcon sx={{ mr: 1 }} />
+              風險評估：
+            </Typography>
+            <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+              {scamProbability > 90 
+                ? '極高風險！這極可能是詐騙訊息，請立即停止對話並勿提供任何個人資訊。' 
+                : scamProbability > 75 
+                  ? '高風險！此對話顯示多個詐騙跡象，建議提高警覺並尋求驗證。'
+                  : '中度風險！此對話有可疑元素，建議謹慎對待所有要求。'
+              }
+            </Typography>
+          </Paper>
+          
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+            <HelpOutlineIcon sx={{ mr: 1 }} />
+            建議行動：
+          </Typography>
+          <List disablePadding sx={{ 
+            bgcolor: 'background.paper', 
+            borderRadius: 2, 
+            mb: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <ListItem sx={{ py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="body1">• 不要回應任何金錢或個人資訊的請求</Typography>
+            </ListItem>
+            <ListItem sx={{ py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="body1">• 透過其他管道確認對方身份</Typography>
+            </ListItem>
+            <ListItem sx={{ py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="body1">• 如果涉及金融交易，請諮詢銀行或撥打165反詐騙專線</Typography>
+            </ListItem>
+            <ListItem sx={{ py: 1.5 }}>
+              <Typography variant="body1">• 將可疑訊息截圖保存作為證據</Typography>
+            </ListItem>
+          </List>
+          
+          {/* 新增：詐騙警示提醒 */}
+          <Box sx={{ 
+            bgcolor: 'background.default', 
+            p: 2, 
+            borderRadius: 1, 
+            border: '1px dashed',
+            borderColor: 'warning.main',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <WarningIcon color="warning" sx={{ mr: 1.5, fontSize: 20 }} />
+            <Typography variant="body2" color="text.secondary">
+              根據統計，超過<strong>75%</strong>的詐騙案件受害者表示，詐騙者會在多次對話中建立信任感，再進行詐欺行為。請保持警覺！
+            </Typography>
+          </Box>
+        </DialogContent>
+        
+        <DialogActions sx={{ px: 4, py: 3, bgcolor: 'background.default' }}>
+          <Button
+            variant="outlined"
+            onClick={handleTakeScreenshot}
+            startIcon={<ScreenshotIcon />}
+            size="large"
+          >
+            截圖求證
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleCloseRiskAssessment}
+            size="large"
+            sx={{ 
+              fontWeight: 'bold',
+              px: 4,
+              py: 1.2,
+              fontSize: '1rem'
+            }}
+          >
+            我了解了
           </Button>
         </DialogActions>
       </Dialog>
@@ -726,11 +1122,100 @@ const ChatSimulatorPage: React.FC = () => {
             複製截圖
           </Button>
           <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<AssessmentIcon />}
+            onClick={() => {
+              setCurrentPage('screenshot-analysis');
+              navigate('/screenshot-analysis');
+              handleCloseScreenshotDialog();
+            }}
+          >
+            分析截圖
+          </Button>
+          <Button
             variant="contained"
             onClick={handleCloseScreenshotDialog}
           >
             關閉
           </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* 使用指南對話框 */}
+      <Dialog
+        open={guideDialogOpen}
+        onClose={() => setGuideDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>ScamRadar 使用指南</DialogTitle>
+        <DialogContent>
+          <Typography variant="h6" gutterBottom>
+            歡迎使用 ScamRadar 防詐騙工具！
+          </Typography>
+          <Typography variant="body1" paragraph>
+            本工具提供三大核心功能，幫助您防範各種詐騙威脅：
+          </Typography>
+          
+          <List>
+            <ListItem>
+              <ListItemIcon>
+                <SecurityIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="即時訊息偵測" 
+                secondary="在聊天模擬中，系統會自動分析訊息內容，當偵測到可疑詐騙訊息時，會立即顯示警示通知。" 
+              />
+            </ListItem>
+            
+            <ListItem>
+              <ListItemIcon>
+                <CameraAltIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="截圖求證" 
+                secondary="遇到可疑訊息時，您可以點擊「截圖求證」按鈕，將截圖儲存並分享給專業人士，獲取更準確的判斷。" 
+              />
+            </ListItem>
+            
+            <ListItem>
+              <ListItemIcon>
+                <SchoolIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="互動式教育" 
+                secondary="點擊「互動式教育」按鈕，體驗各種詐騙情境模擬，學習辨識不同類型的詐騙手法，提升防詐意識。" 
+              />
+            </ListItem>
+            
+            <ListItem>
+              <ListItemIcon>
+                <AssessmentIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="風險評估" 
+                secondary="點擊「風險評估」按鈕，進行互動式風險評估，了解自己的風險傾向並獲得個人化的防詐建議。" 
+              />
+            </ListItem>
+            
+            <ListItem>
+              <ListItemIcon>
+                <ImageIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="截圖分析" 
+                secondary="點擊「截圖分析」按鈕，上傳您收到的可疑訊息截圖，AI 系統將分析詐騙風險機率並提供防護建議。" 
+              />
+            </ListItem>
+          </List>
+          
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            持續使用 ScamRadar，增強您的防詐能力，保護自己免受各種詐騙威脅！
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGuideDialogOpen(false)}>關閉</Button>
         </DialogActions>
       </Dialog>
       

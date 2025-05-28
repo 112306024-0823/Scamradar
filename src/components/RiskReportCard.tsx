@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -17,8 +17,10 @@ import {
   Link
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 
-import { RiskReport, RiskType, RiskLevel } from '../utils/riskProfiles';
+import { RiskReport, RiskType, RiskLevel, calculateStatisticsComparison, NATIONAL_STATISTICS } from '../utils/riskProfiles';
 
 interface RiskReportCardProps {
   report: RiskReport;
@@ -26,6 +28,9 @@ interface RiskReportCardProps {
 
 const RiskReportCard: React.FC<RiskReportCardProps> = ({ report }) => {
   const theme = useTheme();
+  
+  // 計算統計數據比較
+  const comparison = useMemo(() => calculateStatisticsComparison(report), [report]);
   
   // 根據風險等級獲取顏色
   const getRiskLevelColor = (level: RiskLevel) => {
@@ -142,7 +147,7 @@ const RiskReportCard: React.FC<RiskReportCardProps> = ({ report }) => {
               <CardContent>
                 <Grid container spacing={2}>
                   {report.topRiskTypes.map((riskType) => (
-                    <Grid size={{ xs: 12, sm: 4 }} key={riskType}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={riskType}>
                       <Box 
                         sx={{ 
                           textAlign: 'center',
@@ -309,6 +314,217 @@ const RiskReportCard: React.FC<RiskReportCardProps> = ({ report }) => {
             </Grid>
           ))}
         </Grid>
+      </Box>
+      
+      <Divider />
+      
+      {/* 全國統計對比 - 新增的部分 */}
+      <Box sx={{ p: 3, bgcolor: 'background.default' }}>
+        <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ mr: 1, display: 'inline-flex' }}>📊</Box>
+          詐騙風險對比分析
+        </Typography>
+        
+        <Typography variant="body2" paragraph color="text.secondary">
+          以下是您的風險表現與全國平均數據的比較：
+        </Typography>
+        
+        {/* 整體表現對比 */}
+        <Card variant="outlined" sx={{ mb: 3, bgcolor: 'background.paper' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              整體防詐表現
+            </Typography>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body1">
+                您的表現比全國平均
+              </Typography>
+              <Typography 
+                variant="h6" 
+                color={comparison.betterThanPercentage > 0 ? 'success.main' : 'error.main'}
+                sx={{ display: 'flex', alignItems: 'center' }}
+              >
+                {comparison.betterThanPercentage > 0 ? (
+                  <>
+                    <TrendingUpIcon sx={{ mr: 0.5 }} />
+                    高出 {comparison.betterThanPercentage}%
+                  </>
+                ) : (
+                  <>
+                    <TrendingDownIcon sx={{ mr: 0.5 }} />
+                    低於 {Math.abs(comparison.betterThanPercentage)}%
+                  </>
+                )}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ width: 100 }}>全國平均：</Typography>
+              <Box sx={{ flexGrow: 1, mx: 1 }}>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={NATIONAL_STATISTICS.avgPerformanceScore}
+                  sx={{ height: 8, borderRadius: 4 }}
+                />
+              </Box>
+              <Typography variant="body2">{NATIONAL_STATISTICS.avgPerformanceScore}%</Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ width: 100 }}>您的表現：</Typography>
+              <Box sx={{ flexGrow: 1, mx: 1 }}>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={report.scenarioResults.reduce((sum, result) => sum + result.performance, 0) / 
+                         (report.scenarioResults.length || 1)}
+                  color="secondary"
+                  sx={{ height: 8, borderRadius: 4 }}
+                />
+              </Box>
+              <Typography variant="body2">
+                {Math.round(report.scenarioResults.reduce((sum, result) => sum + result.performance, 0) / 
+                           (report.scenarioResults.length || 1))}%
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+        
+        {/* 風險類型對比 */}
+        <Typography variant="h6" gutterBottom>
+          風險類型對比分析
+        </Typography>
+        
+        <Grid container spacing={2}>
+          {report.topRiskTypes.map((riskType) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={riskType}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h3" sx={{ mr: 1 }}>{getRiskTypeIcon(riskType)}</Typography>
+                    <Typography variant="subtitle1">{riskType}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    mt: 2
+                  }}>
+                    <Typography variant="body2">
+                      與全國平均比較
+                    </Typography>
+                    {comparison.riskTypeComparison[riskType] > 0 ? (
+                      <Chip
+                        icon={<TrendingUpIcon />}
+                        label={`高出 ${comparison.riskTypeComparison[riskType]}%`}
+                        color="error"
+                        size="small"
+                      />
+                    ) : (
+                      <Chip
+                        icon={<TrendingDownIcon />}
+                        label={`低於 ${Math.abs(comparison.riskTypeComparison[riskType])}%`}
+                        color="success"
+                        size="small"
+                      />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        
+        {/* 風險等級分布比較 */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            全國風險等級分布
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Card
+                variant={report.overallRiskLevel === RiskLevel.HIGH ? 'elevation' : 'outlined'}
+                elevation={report.overallRiskLevel === RiskLevel.HIGH ? 4 : 0}
+                sx={{ 
+                  p: 2, 
+                  bgcolor: report.overallRiskLevel === RiskLevel.HIGH ? 'error.dark' : 'background.paper',
+                  color: report.overallRiskLevel === RiskLevel.HIGH ? 'white' : 'text.primary',
+                }}
+              >
+                <Typography variant="h6" gutterBottom align="center">
+                  高風險用戶
+                </Typography>
+                <Typography variant="h4" align="center" gutterBottom>
+                  {(NATIONAL_STATISTICS.averageRiskLevel.high * 100).toFixed(0)}%
+                </Typography>
+                {report.overallRiskLevel === RiskLevel.HIGH && (
+                  <Chip 
+                    label="您屬於此類別" 
+                    color="warning" 
+                    size="small" 
+                    sx={{ width: '100%', mt: 1 }}
+                  />
+                )}
+              </Card>
+            </Grid>
+            
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Card
+                variant={report.overallRiskLevel === RiskLevel.MEDIUM ? 'elevation' : 'outlined'}
+                elevation={report.overallRiskLevel === RiskLevel.MEDIUM ? 4 : 0}
+                sx={{ 
+                  p: 2, 
+                  bgcolor: report.overallRiskLevel === RiskLevel.MEDIUM ? 'warning.dark' : 'background.paper',
+                  color: report.overallRiskLevel === RiskLevel.MEDIUM ? 'white' : 'text.primary',
+                }}
+              >
+                <Typography variant="h6" gutterBottom align="center">
+                  中風險用戶
+                </Typography>
+                <Typography variant="h4" align="center" gutterBottom>
+                  {(NATIONAL_STATISTICS.averageRiskLevel.medium * 100).toFixed(0)}%
+                </Typography>
+                {report.overallRiskLevel === RiskLevel.MEDIUM && (
+                  <Chip 
+                    label="您屬於此類別" 
+                    color="warning" 
+                    size="small" 
+                    sx={{ width: '100%', mt: 1 }}
+                  />
+                )}
+              </Card>
+            </Grid>
+            
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Card
+                variant={report.overallRiskLevel === RiskLevel.LOW ? 'elevation' : 'outlined'}
+                elevation={report.overallRiskLevel === RiskLevel.LOW ? 4 : 0}
+                sx={{ 
+                  p: 2, 
+                  bgcolor: report.overallRiskLevel === RiskLevel.LOW ? 'success.dark' : 'background.paper',
+                  color: report.overallRiskLevel === RiskLevel.LOW ? 'white' : 'text.primary',
+                }}
+              >
+                <Typography variant="h6" gutterBottom align="center">
+                  低風險用戶
+                </Typography>
+                <Typography variant="h4" align="center" gutterBottom>
+                  {(NATIONAL_STATISTICS.averageRiskLevel.low * 100).toFixed(0)}%
+                </Typography>
+                {report.overallRiskLevel === RiskLevel.LOW && (
+                  <Chip 
+                    label="您屬於此類別" 
+                    color="success" 
+                    size="small" 
+                    sx={{ width: '100%', mt: 1 }}
+                  />
+                )}
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
       </Box>
       
       <Divider />

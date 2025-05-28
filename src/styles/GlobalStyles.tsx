@@ -21,8 +21,8 @@ const GlobalStyles: React.FC = () => {
         
         body {
           font-family: 'Noto Sans TC', 'Roboto', sans-serif;
-          background: linear-gradient(135deg, #121212 0%, #1a1a2e 100%);
-          color: #FFFFFF;
+          background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+          color: #222222;
           line-height: 1.5;
         }
         
@@ -56,16 +56,16 @@ const GlobalStyles: React.FC = () => {
         }
         
         ::-webkit-scrollbar-track {
-          background: #1e1e1e;
+          background: #f0f0f0;
         }
         
         ::-webkit-scrollbar-thumb {
-          background: #555;
+          background: #c0c0c0;
           border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-          background: #777;
+          background: #a0a0a0;
         }
       `}
     />

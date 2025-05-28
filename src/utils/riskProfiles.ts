@@ -59,7 +59,66 @@ export interface RiskReport {
     description: string;
     link: string;
   }[];
+  riskTypeScores: RiskTypeScores;
 }
+
+// 全國統計數據（模擬資料）
+export const NATIONAL_STATISTICS = {
+  financialScamRate: 0.64, // 64% 的人曾遭遇金融投資詐騙
+  emotionalScamRate: 0.58, // 58% 的人曾遭遇情感詐騙
+  shoppingScamRate: 0.72, // 72% 的人曾遭遇網購詐騙
+  personalInfoLeakRate: 0.45, // 45% 的人曾洩漏個人資料
+  averageRiskLevel: {
+    high: 0.35, // 35% 的人屬於高風險
+    medium: 0.45, // 45% 的人屬於中風險
+    low: 0.20 // 20% 的人屬於低風險
+  },
+  avgPerformanceScore: 62 // 全國平均表現分數
+};
+
+// 計算用戶相較於全國統計數據的差異百分比
+export const calculateStatisticsComparison = (report: RiskReport): {
+  betterThanPercentage: number;
+  riskTypeComparison: Record<RiskType, number>;
+} => {
+  // 計算用戶平均表現
+  const userAvgPerformance = report.scenarioResults.reduce(
+    (sum, result) => sum + result.performance, 
+    0
+  ) / (report.scenarioResults.length || 1);
+  
+  // 計算用戶比全國平均表現好多少百分比
+  const betterThanPercentage = userAvgPerformance > NATIONAL_STATISTICS.avgPerformanceScore
+    ? Math.round(((userAvgPerformance - NATIONAL_STATISTICS.avgPerformanceScore) / NATIONAL_STATISTICS.avgPerformanceScore) * 100)
+    : 0;
+  
+  // 計算用戶風險類型與全國數據的比較
+  const riskTypeComparison: Record<RiskType, number> = {
+    [RiskType.FINANCIAL_INVESTMENT]: calculateRiskComparison(report, RiskType.FINANCIAL_INVESTMENT, NATIONAL_STATISTICS.financialScamRate),
+    [RiskType.EMOTIONAL_FRIENDSHIP]: calculateRiskComparison(report, RiskType.EMOTIONAL_FRIENDSHIP, NATIONAL_STATISTICS.emotionalScamRate),
+    [RiskType.ONLINE_SHOPPING]: calculateRiskComparison(report, RiskType.ONLINE_SHOPPING, NATIONAL_STATISTICS.shoppingScamRate),
+    [RiskType.PERSONAL_INFO_LEAK]: calculateRiskComparison(report, RiskType.PERSONAL_INFO_LEAK, NATIONAL_STATISTICS.personalInfoLeakRate),
+    [RiskType.IMPULSIVE_DECISION]: -15, // 固定值，表示比平均低15%
+    [RiskType.AUTHORITY_COMPLIANCE]: -5, // 固定值，表示比平均低5%
+    [RiskType.INFO_TRUST]: 10, // 固定值，表示比平均高10%
+    [RiskType.TECH_INDIFFERENCE]: -20, // 固定值，表示比平均低20%
+  };
+  
+  return {
+    betterThanPercentage,
+    riskTypeComparison
+  };
+};
+
+// 輔助函數：計算特定風險類型的比較
+const calculateRiskComparison = (report: RiskReport, riskType: RiskType, nationalRate: number): number => {
+  // 檢查用戶是否有這種風險類型
+  const hasRiskType = report.topRiskTypes.includes(riskType);
+  // 如果用戶有此風險類型，則風險高於平均 10-30%，否則低於平均 10-30%
+  return hasRiskType 
+    ? Math.round(Math.random() * 20) + 10 
+    : -1 * (Math.round(Math.random() * 20) + 10);
+};
 
 // 分析用戶在情境中的選擇，生成風險報告
 export const generateRiskReport = (
@@ -221,7 +280,8 @@ export const generateRiskReport = (
     behaviorAnalysis,
     scenarioResults,
     recommendations,
-    learningResources
+    learningResources,
+    riskTypeScores
   };
 };
 

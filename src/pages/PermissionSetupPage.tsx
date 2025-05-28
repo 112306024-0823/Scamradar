@@ -45,12 +45,12 @@ const PermissionSetupPage: React.FC = () => {
 
   // 平台選項
   const platforms: PlatformOption[] = [
-    { id: 'line', name: 'Line', description: '台灣最常用的即時通訊軟體', icon: '📱' },
-    { id: 'messenger', name: 'Facebook Messenger', description: '社群平台即時通訊', icon: '💬' },
-    { id: 'instagram', name: 'Instagram Direct', description: '圖片社群即時訊息', icon: '📸' },
-    { id: 'discord', name: 'Discord', description: '社群語音文字平台', icon: '🎮' },
-    { id: 'dcard', name: 'Dcard', description: '匿名社群論壇', icon: '🔍' },
-    { id: 'sms', name: '簡訊', description: '所有簡訊應用程式', icon: '✉️' }
+    { id: 'line', name: 'Line', description: '即時通訊軟體', icon: '📱' },
+    { id: 'messenger', name: 'Facebook Messenger', description: '社群平台通訊', icon: '💬' },
+    { id: 'instagram', name: 'Instagram Direct', description: '圖片社群通訊', icon: '📸' },
+    { id: 'discord', name: 'Discord', description: '社群語音平台', icon: '🎮' },
+    { id: 'dcard', name: 'Dcard', description: '匿名社群平台', icon: '🔍' },
+    { id: 'sms', name: '簡訊', description: '簡訊應用程式', icon: '✉️' }
   ];
 
   // 當選擇方案變更時，重置選擇的平台
@@ -110,7 +110,7 @@ const PermissionSetupPage: React.FC = () => {
     <Box sx={{ 
       minHeight: '100vh',
       py: 5,
-      background: 'linear-gradient(135deg, #121212 0%, #1a1a2e 100%)'
+      background: 'linear-gradient(135deg, #f4f6fb 0%, #e9eafc 100%)'
     }}>
       <Container maxWidth="md">
         <Paper sx={{ 
@@ -185,7 +185,50 @@ const PermissionSetupPage: React.FC = () => {
             </Alert>
           )}
           
-                    <Grid container spacing={2}>            {platforms.map((platform) => (              <Grid size={{ xs: 12, sm: 6 }} key={platform.id}>                <Paper                   elevation={2}                   sx={{                     p: 2,                     borderRadius: 2,                    cursor: 'pointer',                    transition: 'all 0.2s',                    border: selectedPlatforms.includes(platform.id)                       ? `2px solid ${theme.palette.primary.main}`                       : '2px solid transparent',                    '&:hover': {                      bgcolor: 'rgba(140, 82, 255, 0.1)'                    }                  }}                  onClick={() => handlePlatformChange(platform.id)}                >                  <FormControlLabel                    control={                      <Checkbox                         checked={selectedPlatforms.includes(platform.id)}                        onChange={() => handlePlatformChange(platform.id)}                        disabled={selectedPlan === 'free' && selectedPlatforms.length >= 1 && !selectedPlatforms.includes(platform.id)}                      />                    }                    label={                      <Box>                        <Typography>                          <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>{platform.icon}</span>                          {platform.name}                        </Typography>                        <Typography variant="body2" color="text.secondary">                          {platform.description}                        </Typography>                      </Box>                    }                    sx={{ width: '100%', m: 0 }}                  />                </Paper>              </Grid>            ))}          </Grid>
+          <Grid container spacing={2}>
+            {platforms.map((platform) => (
+              <Grid size={{ xs: 12, sm: 6 }} key={platform.id}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    border: selectedPlatforms.includes(platform.id)
+                      ? `2px solid ${theme.palette.primary.main}`
+                      : '2px solid transparent',
+                    '&:hover': {
+                      bgcolor: 'rgba(140, 82, 255, 0.1)'
+                    }
+                  }}
+                  onClick={() => handlePlatformChange(platform.id)}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedPlatforms.includes(platform.id)}
+                        onChange={() => handlePlatformChange(platform.id)}
+                        disabled={selectedPlan === 'free' && selectedPlatforms.length >= 1 && !selectedPlatforms.includes(platform.id)}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography>
+                          <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>{platform.icon}</span>
+                          {platform.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {platform.description}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ width: '100%', m: 0 }}
+                  />
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
           
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
             <Button

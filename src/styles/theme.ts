@@ -2,7 +2,7 @@ import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
       main: '#8C52FF', // 紫色
       light: '#A37FFF',
@@ -16,12 +16,12 @@ const theme = createTheme({
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#121212',
-      paper: '#1E1E1E',
+      default: '#f4f6fb',
+      paper: '#ffffff',
     },
     text: {
-      primary: '#FFFFFF',
-      secondary: '#CCCCCC',
+      primary: '#222222',
+      secondary: '#555555',
     },
   },
   typography: {
@@ -75,7 +75,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
-          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.2)',
+          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.1)',
         },
       },
     },
@@ -83,7 +83,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backdropFilter: 'blur(10px)',
-          backgroundColor: 'rgba(30, 30, 30, 0.8)',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
         },
       },
     },
@@ -91,3 +91,4 @@ const theme = createTheme({
 });
 
 export default theme; 
+

@@ -68,10 +68,21 @@ const scamPatterns = [
   { pattern: /!{2,}/g, level: WARNING_LEVEL.LOW, reason: '連續多個驚嘆號' },
   { pattern: /\?{2,}/g, level: WARNING_LEVEL.LOW, reason: '連續多個問號' },
   { pattern: /私訊/g, level: WARNING_LEVEL.MEDIUM, reason: '要求私下聯繫' },
-  { pattern: /LINE/gi, level: WARNING_LEVEL.LOW, reason: '提及社交媒體' },
+  { pattern: /LINE|WeChat|Telegram|Messenger/gi, level: WARNING_LEVEL.LOW, reason: '提及社交媒體' },
   { pattern: /http:\/\//g, level: WARNING_LEVEL.MEDIUM, reason: '不安全的 HTTP 連結' },
+  { pattern: /https?:\/\/[^\s]{5,}/g, level: WARNING_LEVEL.MEDIUM, reason: '含有網址連結' },
   { pattern: /\d{8,}/g, level: WARNING_LEVEL.LOW, reason: '包含長數字' },
-  { pattern: /[^\u0000-\u007F]+/g, level: WARNING_LEVEL.LOW, reason: '包含特殊字元或簡體字' }
+  { pattern: /[^\u0000-\u007F]+/g, level: WARNING_LEVEL.LOW, reason: '包含特殊字元或簡體字' },
+  { pattern: /急需|緊急|馬上|立即|立刻|快/g, level: WARNING_LEVEL.MEDIUM, reason: '表達緊急性' },
+  { pattern: /轉帳|匯款|付款|支付|信用卡|卡號/g, level: WARNING_LEVEL.HIGH, reason: '要求金錢交易' },
+  { pattern: /幫忙|協助|幫助|救命/g, level: WARNING_LEVEL.MEDIUM, reason: '請求幫助' },
+  { pattern: /免費|贈品|優惠|折扣|限時|特價/g, level: WARNING_LEVEL.MEDIUM, reason: '提供特殊優惠' },
+  { pattern: /中獎|得獎|幸運|抽中/g, level: WARNING_LEVEL.HIGH, reason: '宣稱中獎' },
+  { pattern: /銀行|帳戶|登入|密碼|驗證碼|認證/g, level: WARNING_LEVEL.HIGH, reason: '要求敏感資訊' },
+  { pattern: /保密|秘密|不要告訴|別說/g, level: WARNING_LEVEL.HIGH, reason: '要求保密' },
+  { pattern: /投資|回報|獲利|收益|賺錢/g, level: WARNING_LEVEL.HIGH, reason: '承諾投資回報' },
+  { pattern: /填寫|表格|資料|個人|身分|地址|電話/g, level: WARNING_LEVEL.MEDIUM, reason: '索取個人資料' },
+  { pattern: /bit\.ly|tinyurl|goo\.gl|短網址/gi, level: WARNING_LEVEL.HIGH, reason: '使用短網址' }
 ];
 
 // 防詐騙小技巧
@@ -157,7 +168,7 @@ export const analyzeMessage = (text: string): DetectionResult => {
   // 關鍵字檢測
   Object.entries(scamKeywords).forEach(([type, keywords]) => {
     keywords.forEach(keyword => {
-      if (text.includes(keyword)) {
+      if (text.toLowerCase().includes(keyword.toLowerCase())) { // 不區分大小寫進行比對
         keywordHits[type as ScamType].count += 1;
         keywordHits[type as ScamType].keywords.push(keyword);
       }
@@ -194,16 +205,17 @@ export const analyzeMessage = (text: string): DetectionResult => {
     }
   });
   
-  // 判斷警告等級
+  // 判斷警告等級 - 降低門檻
   let warningLevel: WarningLevel = highestLevel;
-  if (maxHits >= 3) {
+  if (maxHits >= 2) { // 從3降至2
     warningLevel = WARNING_LEVEL.HIGH;
-  } else if (maxHits >= 2 || patternMatchCount >= 2) {
+  } else if (maxHits >= 1 || patternMatchCount >= 1) { // 從2降至1
     warningLevel = warningLevel === WARNING_LEVEL.HIGH ? WARNING_LEVEL.HIGH : WARNING_LEVEL.MEDIUM;
   }
   
-  // 判斷是否為詐騙
-  const isScam = warningLevel === WARNING_LEVEL.HIGH || (warningLevel === WARNING_LEVEL.MEDIUM && patternMatchCount >= 2);
+  // 判斷是否為詐騙 - 降低門檻
+  // 只要有任何匹配就視為可能的詐騙
+  const isScam = maxHits > 0 || patternMatchCount > 0;
   
   // 組合原因
   let reason = '';

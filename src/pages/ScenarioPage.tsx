@@ -27,6 +27,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import InfoIcon from '@mui/icons-material/Info';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
+import TextField from '@mui/material/TextField';
+import SendIcon from '@mui/icons-material/Send';
 
 import { useAppContext } from '../contexts/AppContext';
 import { getScenarioById, getStepById, getInitialStep, Message, Step, Option } from '../utils/scenarios';
@@ -45,6 +47,7 @@ const ScenarioPage: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
   const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
+  const [userInput, setUserInput] = useState('');
   
   // 獲取情境資料
   useEffect(() => {
@@ -93,6 +96,47 @@ const ScenarioPage: React.FC = () => {
     }, 2000);
   };
   
+  // 處理自由輸入送出
+  const handleUserInputSend = () => {
+    if (!userInput.trim() || !currentStep) return;
+    // 1. 將用戶輸入訊息顯示在訊息區
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      content: userInput,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    // 2. 比對現有選項
+    let matchedOption: Option | undefined;
+    if (currentStep.options) {
+      matchedOption = currentStep.options.find(opt =>
+        userInput.trim() === opt.text.trim() ||
+        opt.text.includes(userInput.trim()) ||
+        userInput.trim().includes(opt.text.trim())
+      );
+    }
+    // 3. 若 match，走該分支；否則顯示預設回饋
+    if (matchedOption) {
+      handleSelectOption(matchedOption);
+    } else {
+      setFeedback('請嘗試更明確的回覆，或參考上方建議。');
+      setIsCorrect(false);
+      setSelectedOption(null);
+      // 2秒後清除回饋
+      setTimeout(() => {
+        setFeedback(null);
+        setIsCorrect(null);
+      }, 2000);
+    }
+    // 4. 清空 userInput
+    setUserInput('');
+    // 將用戶訊息加入訊息區（只顯示，不影響劇情分支）
+    setCurrentStep(prev => prev ? {
+      ...prev,
+      messages: [...prev.messages, userMsg]
+    } : prev);
+  };
+  
   // 返回教育頁面
   const handleBackToEducation = () => {
     setCurrentPage('education');
@@ -119,7 +163,7 @@ const ScenarioPage: React.FC = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #121212 0%, #1a1a2e 100%)',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%)',
       py: 3
     }}>
       <Container maxWidth="md">
@@ -187,7 +231,7 @@ const ScenarioPage: React.FC = () => {
             p: 2, 
             maxHeight: '400px', 
             overflowY: 'auto',
-            bgcolor: 'background.default'
+            bgcolor: '#f8fafd'
           }}>
             {currentStep && currentStep.messages.map((message: Message) => (
               <Box
@@ -223,10 +267,52 @@ const ScenarioPage: React.FC = () => {
               <Typography variant="subtitle2" gutterBottom>
                 請選擇你的回應：
               </Typography>
-              
-                            <Grid container spacing={2}>                {currentStep.options.map((option) => (                  <Grid size={12} key={option.id}>                    <Button                      fullWidth                      variant={selectedOption?.id === option.id ? 'contained' : 'outlined'}                      onClick={() => handleSelectOption(option)}                      disabled={selectedOption !== null}                      sx={{                         justifyContent: 'flex-start',                        textAlign: 'left',                        p: 1.5,                        borderColor: selectedOption?.id === option.id ?                           (isCorrect ? 'success.main' : 'error.main') :                           'divider',                        bgcolor: selectedOption?.id === option.id ?                           (isCorrect ? 'success.dark' : 'error.dark') :                           'transparent'                      }}                    >                      {option.text}                    </Button>                  </Grid>                ))}
+              <Grid container spacing={2}>
+                {currentStep.options.map((option) => (
+                  <Grid size={12} key={option.id}>
+                    <Button
+                      fullWidth
+                      variant={selectedOption?.id === option.id ? 'contained' : 'outlined'}
+                      onClick={() => handleSelectOption(option)}
+                      disabled={selectedOption !== null}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        p: 1.5,
+                        borderColor: selectedOption?.id === option.id ?
+                          (isCorrect ? 'success.main' : 'error.main') :
+                          'divider',
+                        bgcolor: selectedOption?.id === option.id ?
+                          (isCorrect ? 'success.dark' : 'error.dark') :
+                          'transparent'
+                      }}
+                    >
+                      {option.text}
+                    </Button>
+                  </Grid>
+                ))}
               </Grid>
-              
+              {/* 自由輸入區塊 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, gap: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="請輸入你的回覆..."
+                  value={userInput}
+                  onChange={e => setUserInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleUserInputSend(); }}
+                  disabled={selectedOption !== null}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  endIcon={<SendIcon />}
+                  onClick={handleUserInputSend}
+                  disabled={!userInput.trim() || selectedOption !== null}
+                >
+                  送出
+                </Button>
+              </Box>
               {feedback && (
                 <Paper sx={{ 
                   mt: 2, 

@@ -15,6 +15,7 @@ import { useTheme } from '@mui/material/styles';
 import SecurityIcon from '@mui/icons-material/Security';
 import WarningIcon from '@mui/icons-material/Warning';
 import SchoolIcon from '@mui/icons-material/School';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
 import { useAppContext } from '../contexts/AppContext';
 
@@ -68,6 +69,12 @@ const LandingPage: React.FC = () => {
     setCurrentPage('permissions');
     navigate('/permission-setup');
   };
+  
+  // 前往評估頁面
+  const handleGoToAssessment = () => {
+    setCurrentPage('assessment');
+    navigate('/assessment');
+  };
 
   // 特色功能資料
   const features = [
@@ -77,13 +84,13 @@ const LandingPage: React.FC = () => {
       icon: <SecurityIcon sx={{ fontSize: 60, color: 'white' }} />
     },
     {
-      title: "主動截圖求證",
-      description: "遇到可疑訊息？一鍵截圖分享給專業人士，快速獲得協助和建議。",
-      icon: <WarningIcon sx={{ fontSize: 60, color: 'white' }} />
+      title: "截圖智能分析",
+      description: "上傳您收到的可疑訊息截圖，系統立即分析詐騙風險機率，並提供個人化防護建議。",
+      icon: <CameraAltIcon sx={{ fontSize: 60, color: 'white' }} />
     },
     {
-      title: "互動情境教學",
-      description: "透過真實案例模擬，學習識別各種詐騙手法，提升防詐意識和技巧。",
+      title: "互動式風險評估",
+      description: "透過互動式對話評估您的防詐風險傾向，獲得個人化的風險報告和防護建議。",
       icon: <SchoolIcon sx={{ fontSize: 60, color: 'white' }} />
     }
   ];
@@ -92,7 +99,7 @@ const LandingPage: React.FC = () => {
     <Box 
       sx={{ 
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #121212 0%, #1a1a2e 100%)',
+        background: 'linear-gradient(135deg, #f4f6fb 0%, #e9eafc 100%)',
         pt: { xs: 4, md: 8 },
         pb: { xs: 6, md: 12 }
       }}
@@ -137,21 +144,38 @@ const LandingPage: React.FC = () => {
             >
               運用先進的 AI 技術，即時偵測網路上的詐騙訊息，保護您的數位安全。
             </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleStartDemo}
-              className="scale-in"
-              sx={{ 
-                mt: 2,
-                fontSize: '1.2rem',
-                py: 1.5,
-                px: 4,
-                animation: 'scaleIn 0.3s ease-out 0.6s both'
-              }}
-            >
-              立即體驗 Demo
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleStartDemo}
+                className="scale-in"
+                sx={{ 
+                  mt: 2,
+                  fontSize: '1.2rem',
+                  py: 1.5,
+                  px: 4,
+                  animation: 'scaleIn 0.3s ease-out 0.6s both'
+                }}
+              >
+                立即體驗 Demo
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={handleGoToAssessment}
+                className="scale-in"
+                sx={{ 
+                  mt: 2,
+                  fontSize: '1.2rem',
+                  py: 1.5,
+                  px: 4,
+                  animation: 'scaleIn 0.3s ease-out 0.8s both'
+                }}
+              >
+                進行風險評估
+              </Button>
+            </Box>
           </Box>
           
           {/* 右側圖像 */}
@@ -207,14 +231,48 @@ const LandingPage: React.FC = () => {
           <Typography variant="body1" color="text.secondary" paragraph>
             立即體驗 ScamRadar 的智慧防詐功能，提升您的網路安全意識。
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleStartDemo}
-            sx={{ mt: 2 }}
-          >
-            開始體驗
-          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleStartDemo}
+              sx={{ mt: 2 }}
+            >
+              開始體驗
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={handleGoToAssessment}
+              sx={{ mt: 2 }}
+            >
+              進行風險評估
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              color="secondary"
+              onClick={() => {
+                setCurrentPage('screenshot-analysis');
+                navigate('/screenshot-analysis');
+              }}
+              sx={{ mt: 2 }}
+            >
+              截圖分析
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              color="success"
+              onClick={() => {
+                setCurrentPage('education');
+                navigate('/education');
+              }}
+              sx={{ mt: 2 }}
+            >
+              互動式情境
+            </Button>
+          </Box>
         </Box>
       </Container>
     </Box>

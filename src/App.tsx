@@ -17,6 +17,8 @@ import EducationPage from './pages/EducationPage';
 import ScenarioPage from './pages/ScenarioPage';
 import ScenarioCompletionPage from './pages/ScenarioCompletionPage';
 import NotFoundPage from './pages/NotFoundPage';
+import PersonalReportPage from './pages/PersonalReportPage';
+import ScreenshotAnalysisPage from './pages/ScreenshotAnalysisPage';
 
 const darkTheme = createTheme({
   palette: {
@@ -44,6 +46,8 @@ const App: React.FC = () => {
             <Route path="/education" element={<EducationPage />} />
             <Route path="/scenario/:id" element={<ScenarioPage />} />
             <Route path="/scenario/:id/completion" element={<ScenarioCompletionPage />} />
+            <Route path="/assessment/report" element={<PersonalReportPage />} />
+            <Route path="/screenshot-analysis" element={<ScreenshotAnalysisPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Router>

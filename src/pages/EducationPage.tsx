@@ -95,7 +95,7 @@ const EducationPage: React.FC = () => {
     <Box sx={{ 
       minHeight: '100vh',
       py: 4,
-      background: 'linear-gradient(135deg, #121212 0%, #1a1a2e 100%)'
+      background: 'linear-gradient(135deg, #f4f6fb 0%, #e9eafc 100%)'
     }}>
       <Container maxWidth="lg">
         {/* 頁頭部分 */}
